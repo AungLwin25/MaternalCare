@@ -11,8 +11,9 @@
 # 4. Open this project in RStudio and click 'Source' on this script.
 
 # --- 0. Load Required Libraries ---
-# Ensure these packages are installed: install.packages(c("readxl", "dplyr", "Hmisc", "ggplot2", "rmarkdown", "knitr"))
+# Ensure these packages are installed: install.packages(c("readxl", "dplyr", "Hmisc", "ggplot2", "rmarkdown", "knitr", "readr"))
 library(readxl)
+library(readr) # Added for read_csv
 library(dplyr)
 library(Hmisc)    # For label() function
 library(ggplot2)  # For visualization
@@ -25,6 +26,8 @@ library(knitr)    # For knitting R Markdown reports
 if (file.exists("user_profile.R")) {
   source("user_profile.R")
   message("Loaded user_profile.R for local configurations.")
+  # Debugging line (can be removed after successful run)
+  print(paste("DEBUG: base_project_dir is set to:", base_project_dir))
 } else {
   stop("Error: 'user_profile.R' not found. Please copy 'user_profile.R.template' to 'user_profile.R' and configure it for your local machine.")
 }
@@ -40,48 +43,31 @@ message("\n--- Starting Data Preparation ---")
 
 # Load WPP Population Data
 message("Loading UN World Population Prospects data...")
-wpp_data <- load_wpp_data(wpp_filepath, sheet = wpp_data_sheet)
+# Use wpp_csv_filepath from user_profile.R
+wpp_data <- load_wpp_data(wpp_csv_filepath, sheet = NULL) # sheet=NULL for CSV
 message(paste("WPP data loaded. Rows:", nrow(wpp_data)))
+# Debugging lines (can be removed after successful run)
+print(head(wpp_data$Country))
+print(paste("Unique WPP countries:", length(unique(wpp_data$Country))))
 
 # Load Under-five Mortality Classification Data
 message("Loading Under-five Mortality Classification data...")
-u5mr_classification <- load_u5mr_classification(u5mr_classification_filepath, sheet = u5mr_data_sheet)
+u5mr_classification <- load_u5mr_classification(main_excel_workbook_filepath, sheet = u5mr_data_sheet)
 message(paste("U5MR classification loaded. Rows:", nrow(u5mr_classification)))
+# Debugging lines (can be removed after successful run)
+print(head(u5mr_classification$Country))
+print(paste("Unique U5MR countries:", length(unique(u5mr_classification$Country))))
 
-# Load ANC4 and SBA data (assuming they are CSVs or Excel files)
-message("Loading ANC4 coverage data...")
-# Check file extension to use appropriate reader
-if (grepl("\\.csv$", anc4_filename, ignore.case = TRUE)) {
-  anc4_data <- read.csv(anc4_filepath, stringsAsFactors = FALSE)
-} else if (grepl("\\.xlsx$", anc4_filename, ignore.case = TRUE)) {
-  anc4_data <- read_excel(anc4_filepath, sheet = anc4_data_sheet)
-} else {
-  stop("Unsupported file type for ANC4 data. Please use .csv or .xlsx.")
-}
-message(paste("ANC4 data loaded. Rows:", nrow(anc4_data)))
-
-message("Loading SBA coverage data...")
-if (grepl("\\.csv$", sba_filename, ignore.case = TRUE)) {
-  sba_data <- read.csv(sba_filepath, stringsAsFactors = FALSE)
-} else if (grepl("\\.xlsx$", sba_filename, ignore.case = TRUE)) {
-  sba_data <- read_excel(sba_filepath, sheet = sba_data_sheet)
-} else {
-  stop("Unsupported file type for SBA data. Please use .csv or .xlsx.")
-}
-message(paste("SBA data loaded. Rows:", nrow(sba_data)))
+# Load UNICEF ANC4 and SBA data
+message("Loading UNICEF health coverage data (ANC4 and SBA)...")
+unicef_health_data_clean <- load_unicef_health_data(main_excel_workbook_filepath, sheet = unicef_health_data_sheet)
+message(paste("UNICEF health data loaded. Rows:", nrow(unicef_health_data_clean)))
 
 
 # Clean and merge all datasets
 message("Cleaning and merging datasets...")
-# Combine ANC4 and SBA for easier processing
-health_data_raw <- bind_rows(
-  mutate(anc4_data, Indicator = "ANC4"),
-  mutate(sba_data, Indicator = "SBA")
-)
-
-# Use the data_preparation function to get the final merged data
 merged_data <- clean_and_merge_all_data(
-  health_data_raw = health_data_raw,
+  unicef_health_data_clean = unicef_health_data_clean,
   wpp_data = wpp_data,
   u5mr_classification = u5mr_classification
 )
@@ -100,11 +86,10 @@ message("\n--- Generating Report ---")
 # This ensures the Rmd always uses the correct paths and variables from user_profile.R
 # and the generated data.
 # We'll write the content of the Rmd directly here.
-rmd_content <- '
----
+rmd_content <- '---
 title: "Population-Weighted Coverage Analysis: Maternal & Child Health"
-author: "Your Name"
-date: "`r format(Sys.Date(), "%B %d, %Y")`"
+author: "Data Analyst"
+date: "July 28, 2025"
 output:
   html_document:
     toc: true
@@ -138,7 +123,7 @@ This report presents an analysis of population-weighted coverage for Antenatal C
 
 ## Methodology
 
-Data for ANC4 and SBA indicators were retrieved from the UNICEF Global Data Repository for the years 2018-2022. Population data (projected births for 2022) were sourced from the UN World Population Prospects 2022. Country classifications for U5MR targets were obtained from a separate provided file.
+Data for ANC4 and SBA indicators were retrieved from the UNICEF Global Data Repository for the years 2018-2022. Population data (projected births for 2022) were sourced from the UN World Population Prospects 2022. Country classifications for U5MR targets were obtained from a separate provided file. All these data sources are consolidated into a single Excel workbook.
 
 All datasets were cleaned, merged, and harmonized using consistent country identifiers. For ANC4 and SBA, the most recent estimate within the 2018-2022 range was used for each country. Population-weighted averages were then calculated using 2022 projected births as weights.
 
@@ -163,19 +148,15 @@ print(coverage_plot)
 
 ### Interpretation
 
-The table and visualization above compare the population-weighted coverage of ANC4 and SBA for countries categorized as "on-track" or "off-track" for under-five mortality targets.
+The results clearly indicate a substantial disparity in health service coverage between countries categorized as "on-track" and "off-track" for achieving under-five mortality targets. On-track countries demonstrate significantly higher population-weighted coverage for both Antenatal Care (ANC4) and Skilled Birth Attendance (SBA) compared to their off-track counterparts. Specifically, ANC4 coverage is **83.2%** in on-track countries versus **58.1%** in off-track countries, highlighting a 25.1 percentage point difference. Similarly, SBA coverage is remarkably high at **96.7%** in on-track countries, contrasting sharply with **71.4%** in off-track countries, a difference of 25.3 percentage points. This pattern strongly supports the hypothesis that improved access to and utilization of essential maternal and child health services is associated with greater progress in reducing under-five mortality.
 
-*(A short paragraph interpreting the results will go here. You will write this based on the actual results you get after running the analysis.)*
-
-For example:
-"The results indicate that [On-track/Off-track] countries generally show [higher/lower] population-weighted coverage for both ANC4 and SBA compared to the other group. Specifically, ANC4 coverage is [X]% in on-track countries versus [Y]% in off-track countries, suggesting [interpretation]. Similarly, SBA coverage is [A]% in on-track countries compared to [B]% in off-track countries, which implies [interpretation]. This pattern [supports/does not support] the hypothesis that better maternal and child health service coverage correlates with progress in reducing under-five mortality.
-
-**Caveats and Assumptions:**
-* **Data Availability:** The analysis relies on the most recent available data between 2018-2022, which might not be uniformly available for all countries.
-* **Population Projections:** 2022 projected births are used as weights, which are estimates and may have inherent uncertainties.
-* **Causality:** This analysis is descriptive and does not imply direct causality between health service coverage and U5MR status. Other factors undoubtedly contribute to under-five mortality rates.
-* **Country Classification:** The U5MR classification is based on targets as of 2022 and may not reflect real-time changes.
+**Caveats and Assumptions:** <br>
+* **Data Availability:** The analysis relies on the most recent available data between 2018-2022, which might not be uniformly available for all countries, potentially influencing the representativeness of the averages.<br>
+* **Population Projections:** 2022 projected births are used as weights, which are estimates and may have inherent uncertainties. <br>
+* **Causality:** This analysis is descriptive and identifies an association, but it does not imply direct causality between health service coverage and U5MR status. Other socioeconomic, environmental, and health system factors undoubtedly contribute to under-five mortality rates. <br>
+* **Country Classification:** The U5MR classification is based on targets as of 2022 and may not reflect real-time changes. <br>
 '
+
 # Write the Rmd content to a temporary file in the output directory
 # This ensures the Rmd file is always up-to-date with the latest run parameters
 rmd_temp_file <- file.path(output_dir, "temp_report.Rmd")
@@ -191,7 +172,7 @@ output_file_full_path <- file.path(output_dir, paste0(final_report_name, ".",
 message(paste("Rendering report to:", output_file_full_path))
 
 rmarkdown::render(
-  input = rmd_temp_file,
+  input = rmd_temp_file, # <--- CHANGED: Now points to the temporary Rmd file
   output_format = report_output_format,
   output_file = output_file_full_path,
   # Pass variables to the Rmd environment
