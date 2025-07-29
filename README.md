@@ -10,7 +10,7 @@ The project is designed to demonstrate a reproducible, end-to-end data analysis 
 
 ---
 
-### positions I have applied for
+### Positions I have applied for
 * Learning and Skills Data Analyst Consultant – Req. #581598
 * Household Survey Data Analyst Consultant – Req. #581656
 * Administrative Data Analyst – Req. #581696
