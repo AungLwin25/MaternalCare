@@ -102,6 +102,12 @@ output:
     toc: true
     toc_depth: 2
 ---
+### Applied positions
+* Learning and Skills Data Analyst Consultant – Req. #581598
+* Household Survey Data Analyst Consultant – Req. #581656
+* Administrative Data Analyst – Req. #581696
+* Microdata Harmonization Consultant – Req. #581699
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.align = "center")

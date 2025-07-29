@@ -1,3 +1,7 @@
+
+
+
+
 # Population-Weighted Coverage Analysis: Maternal & Child Health
 
 This repository contains the code and structure for calculating population-weighted coverage of Antenatal Care (ANC4) and Skilled Birth Attendance (SBA) for countries categorized by their under-five mortality (U5MR) target status (on-track vs. off-track). The analysis uses data from the UNICEF Global Data Repository and UN World Population Prospects.
@@ -5,6 +9,12 @@ This repository contains the code and structure for calculating population-weigh
 The project is designed to demonstrate a reproducible, end-to-end data analysis workflow suitable for collaborative environments.
 
 ---
+
+### positions I have applied for
+* Learning and Skills Data Analyst Consultant – Req. #581598
+* Household Survey Data Analyst Consultant – Req. #581656
+* Administrative Data Analyst – Req. #581696
+* Microdata Harmonization Consultant – Req. #581699
 
 ## 📁 Repository Structure
 
